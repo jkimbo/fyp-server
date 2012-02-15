@@ -1,25 +1,25 @@
 /*
  * FYP server
  */
-var restify = require('restify')
+var express = require('express')
+    , app = express.createServer()
     , socket = require('socket.io')
-    , port = 1337
-    , url = '127.0.0.1';
+    , port = 1337;
 
-var server = restify.createServer({
-    name: 'fyp-server',
-    version: '0.0.1'
+app.configure(function(){
+    app.use(express.methodOverride());
+    app.use(express.bodyParser());
+    app.use(app.router);
 });
 
-server.use(restify.acceptParser(server.acceptable));
-server.use(restify.queryParser());
-server.use(restify.bodyParser());
-
-server.get('/', function(req, res, next) {
-    res.send("Hello world");
+app.get('/', function(req, res) {
+    res.send(req.params);
 });
 
-server.listen(8080, function() {
-    console.log('%s listening at %s', server.name, server.url);
+app.post('/location/:id', function(req, res) {
+    res.send(req.body);
 });
+
+app.listen(port);
+console.log("Express server listening on port %d", app.address().port);
 
