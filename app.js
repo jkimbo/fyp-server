@@ -5,6 +5,7 @@ var express = require('express')
     , app = express.createServer()
     , io = require('socket.io').listen(app)
     , gm = require('googlemaps')
+    , logme = require('logme')
     , port = 1337;
 
 app.configure(function(){
@@ -15,7 +16,7 @@ app.configure(function(){
 
 app.get('/', function(req, res) {
     gm.distance('51.51957887606202,-0.16791701316833496', '51.498437793589694,-0.17423629760742188|51.50099581189912, -0.1252269744873047', function(err, data) {
-        console.log(JSON.stringify(data));
+        logme.inspect(data);
     });
     res.send(req.params);
 });
