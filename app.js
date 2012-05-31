@@ -31,7 +31,7 @@ app.post('/location/:id', function(req, res) {
   res.json({ hello : 'world' });
 });
 
-app.get('/find', function(req, res) {
+app.get('/findcoach', function(req, res) {
   //console.log(req.param('position'));
   var time = new Date();
   time.setMinutes(time.getMinutes() - 5);
