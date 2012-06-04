@@ -6,6 +6,9 @@ var express = require('express')
   , io = require('socket.io').listen(app)
   , gm = require('googlemaps')
   , logme = require('logme')
+  , redis = require('redis')
+  , client = redis.createClient()
+  , _ = require('underscore')
   , port = 1337;
 
 app.configure(function(){
@@ -13,8 +16,22 @@ app.configure(function(){
   app.use(express.bodyParser());
   app.use(app.router);
 });
-
 app.enable("jsonp callback");
+
+/*
+ * Some redis playing
+ */
+client.on('error', function(err) {
+  console.log("Error "+err);
+});
+
+client.hgetall("coaches", function (err, obj) {
+  _.each(obj, function(coach, key) {
+    console.log(coach, key);
+    var data = JSON.parse(coach);
+  });
+  client.quit();
+});
 
 app.get('/', function(req, res) {
   //gm.distance(
@@ -52,6 +69,9 @@ app.get('/findcoach', function(req, res) {
 
 app.get('/findstop', function(req, res) {
   //console.log(req.param('position'));
+  var time = new Date();
+  time.setMinutes(time.getMinutes() - 5);
+
   var data = {
     coords: {
       speed: 'null',
@@ -61,7 +81,37 @@ app.get('/findstop', function(req, res) {
       accuracy: '30',
       longitude: '-0.174236297',
       heading: 'null'
-    }
+    },
+    coaches: [
+      {
+        route: '69',
+        direction: 'north',
+        coords: {
+          speed: 'null',
+          altitudeAccuracy: 'null',
+          latitude: '51.500995',
+          altitude: 'null',
+          accuracy: '30',
+          longitude: '-0.1252269',
+          heading: 'null'
+        },
+        timestamp: time.getTime()
+      },
+      {
+        route: '69',
+        direction: 'south',
+        coords: {
+          speed: 'null',
+          altitudeAccuracy: 'null',
+          latitude: '51.51957',
+          altitude: 'null',
+          accuracy: '30',
+          longitude: '-0.16791',
+          heading: 'null'
+        },
+        timestamp: time.getTime()
+      }
+    ]
   }
   res.json(data);
 });
