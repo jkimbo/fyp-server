@@ -25,14 +25,6 @@ client.on('error', function(err) {
   console.log("Error "+err);
 });
 
-client.hgetall("coaches", function (err, obj) {
-  _.each(obj, function(coach, key) {
-    console.log(coach, key);
-    var data = JSON.parse(coach);
-  });
-  client.quit();
-});
-
 app.get('/', function(req, res) {
   //gm.distance(
     //'51.51957887606202,-0.16791701316833496',
@@ -41,7 +33,32 @@ app.get('/', function(req, res) {
       //logme.inspect(data);
     //}
   //);
-  //res.send(req.params);
+  res.json({ hello: 'world' });
+});
+
+/*
+ * Get list of coaches in network
+ */
+app.get('/coaches', function(req, res) {
+  var coaches = [];
+  client.hgetall("coaches", function (err, obj) {
+    _.each(obj, function(coach, key) {
+      var data = JSON.parse(coach);
+      data.id = key;
+      coaches.push(data);
+    });
+    client.quit();
+    res.json(coaches);
+  });
+});
+
+/*
+ * Insert new coach location data
+ */
+app.post('/coach', function(req, res) {
+  var data = req.body;
+  client.hset('coaches', data.id, JSON.stringify(data), redis.print);
+  res.json('Success');
 });
 
 app.post('/location/:id', function(req, res) {
