@@ -8,8 +8,6 @@ var express = require('express')
   , logme = require('logme')
   , mongoose = require('mongoose')
   , models = require('./schema')
-  , redis = require('redis')
-  , client = redis.createClient()
   , _ = require('underscore')
   , port = 1337;
 
@@ -24,13 +22,6 @@ app.configure(function(){
   app.use(app.router);
 });
 app.enable("jsonp callback");
-
-/*
- * Some redis playing
- */
-client.on('error', function(err) {
-  console.log("Error "+err);
-});
 
 app.get('/', function(req, res) {
   //gm.distance(
@@ -48,15 +39,6 @@ app.get('/', function(req, res) {
  */
 app.get('/coaches', function(req, res) {
   var coaches = [];
-  client.hgetall("coaches", function (err, obj) {
-    _.each(obj, function(coach, key) {
-      var data = JSON.parse(coach);
-      data.id = key;
-      coaches.push(data);
-    });
-    client.quit();
-    res.json(coaches);
-  });
 });
 
 /*
@@ -65,7 +47,6 @@ app.get('/coaches', function(req, res) {
 app.post('/coach', function(req, res) {
   var data = req.body;
   console.log(data);
-  //client.hset('coaches', data.id, JSON.stringify(data), redis.print);
   res.json('Success');
 });
 

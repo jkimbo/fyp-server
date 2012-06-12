@@ -8,7 +8,6 @@
       , "googlemaps": ">=0.1.0"
       , "logme": ">=0.3.0"
       , "mongoose": ">=2.0"
-      , "redis": ">=0.7"
       , "underscore": ">=1.0"
   }
 }
