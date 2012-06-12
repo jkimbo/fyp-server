@@ -44,10 +44,27 @@ app.get('/coaches', function(req, res) {
 /*
  * Insert new coach location data
  */
-app.post('/coach', function(req, res) {
+app.post('/coach/:id', function(req, res) {
+  var id = req.params.id;
   var data = req.body;
-  console.log(data);
-  res.json('Success');
+  // insert coach data into database
+  var location = new models.Location({
+    lat: data.lat,
+    lng: data.lng,
+    timestamp: data.timestamp,
+    coach: id
+  });
+  // push location data to all clients that are connected to coach channel
+
+  location.save(function(err) {
+    if(!err) {
+      res.json('Success');
+    } else {
+      res.json({
+        err: err
+      });
+    }
+  });
 });
 
 app.post('/location/:id', function(req, res) {
