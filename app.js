@@ -3,12 +3,12 @@
  */
 var express = require('express')
   , app = express.createServer()
-  , io = require('socket.io').listen(app)
   , gm = require('googlemaps')
   , logme = require('logme')
   , mongoose = require('mongoose')
   , models = require('./schema')
   , _ = require('underscore')
+  , sockets = require('./sockets')
   , port = 1337;
 
 /*
@@ -233,13 +233,8 @@ app.get('/findstop', function(req, res) {
   res.json(data);
 });
 
+sockets.run(app); // initialise socket connections
+
 app.listen(port);
 console.log("Express server listening on port %d", app.address().port);
-
-io.sockets.on('connection', function(socket) {
-  socket.emit('data', { hello: 'world' });
-  socket.on('location', function(data) {
-    console.log(data);
-  });
-});
 

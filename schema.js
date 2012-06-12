@@ -17,6 +17,14 @@ var Location = new Schema({
   heading: String
 });
 
+/*
+ * Point
+ */
+var Point = new Schema({
+  0: Number, // latitude
+  1: Number // longitude
+});
+
 var Coach = new Schema({
   id: Number, // id of coach
   route: Number, // route number
@@ -30,8 +38,8 @@ var Route = new Schema({
   id: Number, // route id
   description: String, // description of route
   coaches: [Coach], // list of coaches that operate on route
-  points: [Location], // lat, lng coordinates along route
-  stops: [Location] // lat, lng coordinates of stops
+  points: [Point], // lat, lng coordinates along route
+  stops: [Point] // lat, lng coordinates of stops
 });
 
 module.exports = {
