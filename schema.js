@@ -42,8 +42,19 @@ var Route = new Schema({
   stops: [Point] // lat, lng coordinates of stops
 });
 
+/*
+ * Stop data
+ */
+var Stop = new Schema({
+  id: Number,
+  description: String,
+  lat: Number, // latitude
+  lng: Number // longitude
+});
+
 module.exports = {
   Location: mongoose.model('Location', Location),
   Route: mongoose.model('Route', Route),
-  Coach: mongoose.model('Coach', Coach)
+  Coach: mongoose.model('Coach', Coach),
+  Stop: mongoose.model('Stop', Stop)
 }

@@ -14,19 +14,17 @@ exports.run = function(app) {
     socket.emit('message', { hello: 'Hello' });
   });
   // for each coach set up a channel
-  // for each route set up a channel
   models.Coach.find({}, function(err, coaches) {
     _.each(coaches, function(coach, index) {
       newChannel(coach.id, 'coach');
     });
   });
-  /*
-  db.channels.on('load', function() { // when db is ready
-    db.channels.forEach(function(key, val) { // loop through each channel
-      newChannel(key);
+  // for each route set up a channel
+  models.Route.find({}, function(err, routes) {
+    _.each(routes, function(route, index) {
+      newChannel(route.id, 'route');
     });
   });
-  */
 }
 
 var newChannel = function(channel, prefix) {

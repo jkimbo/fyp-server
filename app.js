@@ -67,10 +67,6 @@ app.post('/coach/:id', function(req, res) {
   });
 });
 
-app.post('/location/:id', function(req, res) {
-  res.json({ hello : 'world' });
-});
-
 app.get('/findcoach', function(req, res) {
   //console.log(req.param('position'));
   var time = new Date();
@@ -167,71 +163,85 @@ app.get('/getcoaches', function(req, res) {
   res.json(data);
 });
 
+/*
+ * Find nearest coach stops to a particular location
+ *
+ * position: req.param('position')
+ *  => coords: {
+ *      latitude: ..
+ *      longitude: ..
+ *      accuracy: ..
+ *  },
+ *  timestamp: ...
+ */
 app.get('/findstop', function(req, res) {
-  //console.log(req.param('position'));
+  var pos = req.param('position');
   var time = new Date();
   time.setMinutes(time.getMinutes() - 5);
 
-  var data = {
-    stops: [
-      {
-        id: 25,
-        description: 'Imperial College Coach Stop',
-        coords: {
-          altitudeAccuracy: 'null',
-          latitude: '51.4984377',
-          altitude: 'null',
-          accuracy: '30',
-          longitude: '-0.174236297',
-          heading: 'null'
-        },
-      },
-      {
-        id: 24,
-        description: 'Hyde Park Gate Station',
-        coords: {
-          altitudeAccuracy: 'null',
-          latitude: '51.501530105690925',
-          altitude: 'null',
-          accuracy: '30',
-          longitude: '-0.1821756362915039',
-          heading: 'null'
-        }
-      }
-    ],
-    coaches: [
-      {
-        route: '69',
-        direction: 'north',
-        coords: {
-          speed: 'null',
-          altitudeAccuracy: 'null',
-          latitude: '51.500995',
-          altitude: 'null',
-          accuracy: '30',
-          longitude: '-0.1252269',
-          heading: 'null'
-        },
-        timestamp: time.getTime()
-      },
-      {
-        route: '69',
-        direction: 'south',
-        coords: {
-          speed: 'null',
-          altitudeAccuracy: 'null',
-          latitude: '51.51957',
-          altitude: 'null',
-          accuracy: '30',
-          longitude: '-0.16791',
-          heading: 'null'
-        },
-        timestamp: time.getTime()
-      }
-    ]
-  }
-  res.json(data);
+  var data = {};
+  data.stops = [];
+
+  var distance = 0.01;
+  getStops({
+    lat: {
+      gte: pos.coords.latitude - distance,
+      lte: parseFloat(pos.coords.latitude) + parseFloat(distance)
+    },
+    lng: {
+      gte: pos.coords.longitude - distance,
+      lte: parseFloat(pos.coords.longitude) + parseFloat(distance)
+    }
+  }, 3, 0.05, function(stops) {
+    _.each(stops, function(stop, index) {
+      data.stops.push(stop);
+    });
+    res.json(data);
+  });
 });
+
+/*
+ * Get stops around a position
+ *
+ * size: {
+ *  lat: {
+ *      gte:
+ *      lte:
+ *  },
+ *  lng: {
+ *      gte:
+ *      lte:
+ *  }
+ * }
+ */
+var getStops = function(size, limit, step, callback) {
+  // get stops near a position
+  // recursively increase box size until enough stops are found
+
+  models.Stop
+  .where('lat').gte(size.lat.gte)
+  .where('lat').lte(size.lat.lte)
+  .where('lng').gte(size.lng.gte)
+  .where('lng').lte(size.lng.lte)
+  .run(function(err, stops) {
+    if(stops.length < limit) { // if there aren't enough stops
+      size.lat = {
+        gte: size.lat.gte - step,
+        lte: parseFloat(size.lat.lte) + parseFloat(step)
+      };
+      size.lng = {
+        gte: size.lng.gte - step,
+        lte: parseFloat(size.lng.lte) + parseFloat(step)
+      }
+      getStops(size, limit, callback);
+    } else {
+      if(typeof callback == 'function') {
+        callback(stops);
+        return false;
+      }
+    }
+  });
+};
 
 sockets.run(app); // initialise socket connections
 
