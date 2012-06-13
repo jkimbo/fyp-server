@@ -9,6 +9,7 @@ var express = require('express')
   , models = require('./schema')
   , _ = require('underscore')
   , sockets = require('./sockets')
+  , routes = require('./routes')
   , async = require('async')
   , port = 1337;
 
@@ -24,7 +25,22 @@ app.configure(function(){
 });
 app.enable("jsonp callback");
 
-app.get('/', function(req, res) {
+/** Converts numeric degrees to radians */
+if (typeof(Number.prototype.toRad) === "undefined") {
+  Number.prototype.toRad = function() {
+    return this * Math.PI / 180;
+  }
+}
+
+app.get('/', routes.index);
+app.get('/coaches', routes.coaches);
+app.get('/stops', routes.stops);
+
+/*
+ * Insert new coach location data
+ */
+app.post('/coach/:id', routes.coachLocation);
+
   //gm.distance(
     //'51.51957887606202,-0.16791701316833496',
     //'51.498437793589694,-0.17423629760742188|51.50099581189912, -0.1252269744873047',
@@ -32,64 +48,6 @@ app.get('/', function(req, res) {
       //logme.inspect(data);
     //}
   //);
-  res.json({ hello: 'world' });
-});
-
-/*
- * Get list of coaches in network
- */
-app.get('/coaches', function(req, res) {
-  var data = {};
-  data.coaches = [];
-  if(req.param('stop')) { // if stop is defined
-    // find all coaches with stop in their stop list
-    // TODO filter by ones closet to user
-    models.Coach
-    .where('stops')
-    .in([req.param('stop')])
-    .run(function(err, coaches) {
-      // loop through all coaches and find their most recent location
-      async.forEachSeries(coaches, function(coach, callback) {
-        var co = coach.toJSON();
-        coach.getLocation(function(err, location) {
-          co.location = location;
-          data.coaches.push(co); // add to list of coaches
-          callback();
-        });
-      }, function(err) {
-        res.json(data);
-      });
-    });
-  } else { // return all coaches
-    res.json('success');
-  }
-});
-
-/*
- * Insert new coach location data
- */
-app.post('/coach/:id', function(req, res) {
-  var id = req.params.id;
-  var data = req.body;
-  // insert coach data into database
-  var location = new models.Location({
-    lat: data.lat,
-    lng: data.lng,
-    timestamp: data.timestamp,
-    coach: id
-  });
-  // push location data to all clients that are connected to coach channel
-
-  location.save(function(err) {
-    if(!err) {
-      res.json('Success');
-    } else {
-      res.json({
-        err: err
-      });
-    }
-  });
-});
 
 app.get('/findcoach', function(req, res) {
   //console.log(req.param('position'));
@@ -186,100 +144,6 @@ app.get('/getcoaches', function(req, res) {
   }
   res.json(data);
 });
-
-/*
- * Find nearest coach stops to a particular location
- *
- * position: req.param('position')
- *  => coords: {
- *      latitude: ..
- *      longitude: ..
- *      accuracy: ..
- *  },
- *  timestamp: ...
- */
-app.get('/findstop', function(req, res) {
-  var pos = req.param('position');
-  var time = new Date();
-  time.setMinutes(time.getMinutes() - 5);
-
-  var data = {};
-  data.stops = [];
-
-  var size = 0.01; // initial distance
-  var limit = 3; // minimum number of stops to find
-  var step = 0.05; // step size
-  getStops(size, pos, limit, step, function(stops) {
-    _.each(stops, function(stop, index) {
-      var st = stop.toJSON();
-      st.distance = getDistance({
-        lat: parseFloat(pos.coords.latitude),
-        lng: parseFloat(pos.coords.longitude)
-      }, {
-        lat: parseFloat(stop.lat),
-        lng: parseFloat(stop.lng)
-      });
-      data.stops.push(st);
-    });
-    res.json(data);
-  });
-});
-
-/*
- * Get stops around a position
- *
- * Recursively looks for stops around a position
- *
- * size: initial distance to look around
- * pos: position to look around
- * limit: minimum number of stops to find
- * step: step size
- * callback(stops): callback function to be run when stops found
- *
- */
-var getStops = function(size, pos, limit, step, callback) {
-  // get stops near a position
-  // recursively increase box size until enough stops are found
-
-  models.Stop
-  .where('lat').gte(pos.coords.latitude - size)
-  .where('lat').lte(parseFloat(pos.coords.latitude) + parseFloat(size))
-  .where('lng').gte(pos.coords.longitude - size)
-  .where('lng').lte(parseFloat(pos.coords.longitude) + parseFloat(size))
-  .run(function(err, stops) {
-    if(stops.length < limit) { // if there aren't enough stops
-      getStops(parseFloat(size) + parseFloat(step), pos, limit, step, callback);
-    } else {
-      if(typeof callback == 'function') {
-        callback(stops);
-        return false;
-      }
-    }
-  });
-};
-
-/*
- * Get distance
- * Get distance between two points in km
- */
-var getDistance = function(pointA, pointB) {
-  var R = 6371; // Radius of the earth in km
-  var dLat = (pointB.lat-pointA.lat).toRad();  // Javascript functions in radians
-  var dLon = (pointB.lng-pointA.lng).toRad();
-  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(pointA.lat.toRad()) * Math.cos(pointB.lat.toRad()) *
-          Math.sin(dLon/2) * Math.sin(dLon/2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  var d = R * c; // Distance in km
-  return d;
-}
-
-/** Converts numeric degrees to radians */
-if (typeof(Number.prototype.toRad) === "undefined") {
-  Number.prototype.toRad = function() {
-    return this * Math.PI / 180;
-  }
-}
 
 sockets.run(app); // initialise socket connections
 
