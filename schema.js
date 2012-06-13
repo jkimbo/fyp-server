@@ -28,8 +28,15 @@ var Point = new Schema({
 var Coach = new Schema({
   id: Number, // id of coach
   route: Number, // route number
-  description: String // coach description [optional]
+  description: String, // coach description [optional]
+  stops: [Number] // array of stop ids that coach stops at
 });
+
+Coach.methods.getLocation = function getLocation(cb) {
+  return mongoose.model('Location', Location).where('coach', this.id)
+  .sort('timestamp', -1)
+  .findOne(cb);
+};
 
 /*
  * Route data
@@ -49,7 +56,8 @@ var Stop = new Schema({
   id: Number,
   description: String,
   lat: Number, // latitude
-  lng: Number // longitude
+  lng: Number, // longitude
+  routes: [Number] // array of route id's
 });
 
 module.exports = {

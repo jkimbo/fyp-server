@@ -9,6 +9,7 @@ var express = require('express')
   , models = require('./schema')
   , _ = require('underscore')
   , sockets = require('./sockets')
+  , async = require('async')
   , port = 1337;
 
 /*
@@ -38,7 +39,30 @@ app.get('/', function(req, res) {
  * Get list of coaches in network
  */
 app.get('/coaches', function(req, res) {
-  var coaches = [];
+  var data = {};
+  data.coaches = [];
+  if(req.param('stop')) { // if stop is defined
+    // find all coaches with stop in their stop list
+    // TODO filter by ones closet to user
+    models.Coach
+    .where('stops')
+    .in([req.param('stop')])
+    .run(function(err, coaches) {
+      // loop through all coaches and find their most recent location
+      async.forEachSeries(coaches, function(coach, callback) {
+        var co = coach.toJSON();
+        coach.getLocation(function(err, location) {
+          co.location = location;
+          data.coaches.push(co); // add to list of coaches
+          callback();
+        });
+      }, function(err) {
+        res.json(data);
+      });
+    });
+  } else { // return all coaches
+    res.json('success');
+  }
 });
 
 /*

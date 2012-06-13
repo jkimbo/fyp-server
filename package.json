@@ -9,5 +9,6 @@
       , "logme": ">=0.3.0"
       , "mongoose": ">=2.0"
       , "underscore": ">=1.0"
+      , "async": ">=0.1"
   }
 }
