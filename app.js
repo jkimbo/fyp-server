@@ -182,17 +182,10 @@ app.get('/findstop', function(req, res) {
   var data = {};
   data.stops = [];
 
-  var distance = 0.01;
-  getStops({
-    lat: {
-      gte: pos.coords.latitude - distance,
-      lte: parseFloat(pos.coords.latitude) + parseFloat(distance)
-    },
-    lng: {
-      gte: pos.coords.longitude - distance,
-      lte: parseFloat(pos.coords.longitude) + parseFloat(distance)
-    }
-  }, 3, 0.05, function(stops) {
+  var distance = 0.01; // initial distance
+  var limit = 3; // minimum number of stops to find
+  var step = 0.05; // step size
+  getStops(distance, pos, limit, step, function(stops) {
     _.each(stops, function(stop, index) {
       data.stops.push(stop);
     });
@@ -203,37 +196,27 @@ app.get('/findstop', function(req, res) {
 /*
  * Get stops around a position
  *
- * size: {
- *  lat: {
- *      gte:
- *      lte:
- *  },
- *  lng: {
- *      gte:
- *      lte:
- *  }
- * }
+ * Recursively looks for stops around a position
+ *
+ * size: initial distance to look around
+ * pos: position to look around
+ * limit: minimum number of stops to find
+ * step: step size
+ * callback(stops): callback function to be run when stops found
+ *
  */
-var getStops = function(size, limit, step, callback) {
+var getStops = function(size, pos, limit, step, callback) {
   // get stops near a position
   // recursively increase box size until enough stops are found
 
   models.Stop
-  .where('lat').gte(size.lat.gte)
-  .where('lat').lte(size.lat.lte)
-  .where('lng').gte(size.lng.gte)
-  .where('lng').lte(size.lng.lte)
+  .where('lat').gte(pos.coords.latitude - size)
+  .where('lat').lte(parseFloat(pos.coords.latitude) + parseFloat(size))
+  .where('lng').gte(pos.coords.longitude - size)
+  .where('lng').lte(parseFloat(pos.coords.longitude) + parseFloat(size))
   .run(function(err, stops) {
     if(stops.length < limit) { // if there aren't enough stops
-      size.lat = {
-        gte: size.lat.gte - step,
-        lte: parseFloat(size.lat.lte) + parseFloat(step)
-      };
-      size.lng = {
-        gte: size.lng.gte - step,
-        lte: parseFloat(size.lng.lte) + parseFloat(step)
-      }
-      getStops(size, limit, callback);
+      getStops(parseFloat(size) + parseFloat(step), pos, limit, step, callback);
     } else {
       if(typeof callback == 'function') {
         callback(stops);
