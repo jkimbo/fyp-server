@@ -182,12 +182,20 @@ app.get('/findstop', function(req, res) {
   var data = {};
   data.stops = [];
 
-  var distance = 0.01; // initial distance
+  var size = 0.01; // initial distance
   var limit = 3; // minimum number of stops to find
   var step = 0.05; // step size
-  getStops(distance, pos, limit, step, function(stops) {
+  getStops(size, pos, limit, step, function(stops) {
     _.each(stops, function(stop, index) {
-      data.stops.push(stop);
+      var st = stop.toJSON();
+      st.distance = getDistance({
+        lat: parseFloat(pos.coords.latitude),
+        lng: parseFloat(pos.coords.longitude)
+      }, {
+        lat: parseFloat(stop.lat),
+        lng: parseFloat(stop.lng)
+      });
+      data.stops.push(st);
     });
     res.json(data);
   });
@@ -225,6 +233,29 @@ var getStops = function(size, pos, limit, step, callback) {
     }
   });
 };
+
+/*
+ * Get distance
+ * Get distance between two points in km
+ */
+var getDistance = function(pointA, pointB) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = (pointB.lat-pointA.lat).toRad();  // Javascript functions in radians
+  var dLon = (pointB.lng-pointA.lng).toRad();
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(pointA.lat.toRad()) * Math.cos(pointB.lat.toRad()) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  var d = R * c; // Distance in km
+  return d;
+}
+
+/** Converts numeric degrees to radians */
+if (typeof(Number.prototype.toRad) === "undefined") {
+  Number.prototype.toRad = function() {
+    return this * Math.PI / 180;
+  }
+}
 
 sockets.run(app); // initialise socket connections
 
