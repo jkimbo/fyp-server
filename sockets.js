@@ -31,8 +31,8 @@ var newChannel = function(channel, prefix) {
   var name = '/';
   if(prefix) name += prefix + '-';
   name += channel;
-  channels[channel] = io.of(name).on('connection', function(socket) {
-    socket.emit('message', { hello: 'Welcome to the '+channel+' channel' }); // welcome message
+  channels[name] = io.of(name).on('connection', function(socket) {
+    socket.emit('message', { hello: 'Welcome to the '+name+' channel' }); // welcome message
   });
 }
 
@@ -44,5 +44,5 @@ exports.add = function(channel, key, callback) {
   //});
 }
 
-exports.channel = channels;
+exports.channels = channels;
 

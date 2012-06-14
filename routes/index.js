@@ -126,7 +126,9 @@ exports.coachLocation = function(req, res) {
     timestamp: data.timestamp,
     coach: id
   });
+
   // push location data to all clients that are connected to coach channel
+  sockets.channels['/coach-'+id].emit('location', data);
 
   location.save(function(err) {
     if(!err) {
