@@ -41,13 +41,13 @@ exports.stops = function(req, res) {
   models.Stop.findStops(size, pos, limit, step, function(stops) {
     _.each(stops, function(stop, index) {
       var st = stop.toJSON();
-      st.distance = getDistance({
+      st.distance = Math.round(getDistance({
         lat: parseFloat(pos.coords.latitude),
         lng: parseFloat(pos.coords.longitude)
       }, {
         lat: parseFloat(stop.lat),
         lng: parseFloat(stop.lng)
-      });
+      }));
       data.stops.push(st);
     });
     res.json(data);
